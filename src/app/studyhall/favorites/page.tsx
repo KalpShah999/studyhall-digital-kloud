@@ -1,17 +1,27 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState, useEffect, Suspense } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PlaceCard, Place } from "@/components/studyhall/place-card"
 import { Button } from "@/components/ui/button"
 import { Heart, Clock } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useFavorites } from "@/hooks/use-favorites"
 import { getAllPlaces } from "@/lib/mock-data"
 
-export default function FavoritesPage() {
+function FavoritesContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { favorites: favoriteIds, visited: visitedIds, toggleFavorite, isFavorite } = useFavorites()
+  const [activeTab, setActiveTab] = useState("favorites")
+
+  // Check for tab parameter in URL
+  useEffect(() => {
+    const tab = searchParams.get("tab")
+    if (tab === "visited") {
+      setActiveTab("visited")
+    }
+  }, [searchParams])
   
   // Get all places from database
   const allPlaces = useMemo(() => getAllPlaces(), [])
@@ -67,7 +77,7 @@ export default function FavoritesPage() {
 
       {/* Tabs */}
       <div className="flex-1 overflow-hidden">
-        <Tabs defaultValue="favorites" className="flex flex-col h-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
           <TabsList className="w-full rounded-none border-b">
             <TabsTrigger value="favorites" className="flex-1">
               <Heart className="h-4 w-4 mr-2" />
@@ -164,6 +174,23 @@ export default function FavoritesPage() {
         </Tabs>
       </div>
     </div>
+  )
+}
+
+export default function FavoritesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col h-full">
+        <div className="sticky top-0 z-10 bg-background border-b px-4 py-4">
+          <h1 className="text-2xl font-bold">My Places</h1>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
+      <FavoritesContent />
+    </Suspense>
   )
 }
 

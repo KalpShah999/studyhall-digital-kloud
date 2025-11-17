@@ -49,10 +49,12 @@ const MOCK_PLACES: Place[] = [
 ]
 
 const QUICK_SEARCHES = [
-  { icon: MapPin, label: "Near Me", query: "" },
-  { icon: TrendingUp, label: "Library", query: "library" },
-  { icon: TrendingUp, label: "Café", query: "café" },
-  { icon: TrendingUp, label: "Quiet", query: "quiet" },
+  { icon: MapPin, label: "Near Me", query: "", isTag: false },
+  { icon: TrendingUp, label: "Library", query: "library", isTag: false },
+  { icon: TrendingUp, label: "Café", query: "café", isTag: false },
+  { icon: TrendingUp, label: "Quiet", query: "quiet", isTag: true },
+  { icon: TrendingUp, label: "Outlets", query: "outlets", isTag: true },
+  { icon: TrendingUp, label: "Natural Light", query: "natural light", isTag: true },
 ]
 
 const RECENT_SEARCHES = ["Silent study areas", "Library", "Coffee shop"]
@@ -73,19 +75,30 @@ export default function SearchPage() {
     }))
   }, [isFavorite])
 
-  const handleSearch = (searchQuery: string) => {
+  const handleSearch = (searchQuery: string, isTagSearch = false) => {
     setQuery(searchQuery)
     if (searchQuery.trim()) {
       setIsSearching(true)
       setTimeout(() => {
-        const filtered = placesWithFavorites.filter(
-          (p) =>
-            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.amenities.some((a) =>
-              a.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-        )
+        const lowerQuery = searchQuery.toLowerCase()
+        
+        // If searching for a tag (from quick searches), prioritize amenity matches
+        let filtered = placesWithFavorites.filter((p) => {
+          const nameMatch = p.name.toLowerCase().includes(lowerQuery)
+          const categoryMatch = p.category.toLowerCase().includes(lowerQuery)
+          const amenityMatch = p.amenities.some((a) =>
+            a.toLowerCase().includes(lowerQuery)
+          )
+          
+          // If it's a tag search, only return places with matching amenities
+          if (isTagSearch) {
+            return amenityMatch
+          }
+          
+          // Otherwise, search across all fields
+          return nameMatch || categoryMatch || amenityMatch
+        })
+        
         setResults(filtered)
         setIsSearching(false)
         
@@ -150,7 +163,7 @@ export default function SearchPage() {
                   return (
                     <button
                       key={item.label}
-                      onClick={() => handleSearch(item.query || item.label.toLowerCase())}
+                      onClick={() => handleSearch(item.query || item.label.toLowerCase(), item.isTag)}
                       className="flex items-center gap-2 p-3 rounded-lg border border-border bg-card hover:bg-accent transition-colors text-left"
                     >
                       <Icon className="h-4 w-4 text-primary" />

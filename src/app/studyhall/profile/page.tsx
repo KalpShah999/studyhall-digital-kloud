@@ -135,7 +135,7 @@ export default function ProfilePage() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => router.push("/studyhall/favorites")}
+                onClick={() => router.push("/studyhall/favorites?tab=visited")}
                 className="h-auto py-4 flex-col gap-2"
               >
                 <Clock className="h-5 w-5" />
