@@ -28,6 +28,11 @@ import { toast } from "@/hooks/use-toast"
 import { getPlaceById, PlaceDetail } from "@/lib/mock-data"
 import { use } from "react"
 import { useFavorites } from "@/hooks/use-favorites"
+import { checkInToPlace, getCurrentCheckIn, isCheckedInAt } from "@/lib/checkins"
+import { addReview as saveReview, getReviewsForPlace } from "@/lib/reviews"
+import { addQuestion, getQuestionsForPlace } from "@/lib/questions"
+import { Input } from "@/components/ui/input"
+import { Check, Copy } from "lucide-react"
 
 export default function PlaceDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
@@ -35,16 +40,26 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
   const { toggleFavorite, isFavorite: checkIsFavorite, addVisited, favorites } = useFavorites()
   const [place, setPlace] = useState<PlaceDetail | null>(null)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [isCheckedIn, setIsCheckedIn] = useState(false)
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [showReview, setShowReview] = useState(false)
+  const [showQuestion, setShowQuestion] = useState(false)
+  const [showShare, setShowShare] = useState(false)
   const [rating, setRating] = useState(0)
   const [reviewText, setReviewText] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [questionText, setQuestionText] = useState("")
+  const [userReviews, setUserReviews] = useState<any[]>([])
+  const [userQuestions, setUserQuestions] = useState<any[]>([])
+  const [linkCopied, setLinkCopied] = useState(false)
 
   // Load place data based on ID
   useEffect(() => {
     const placeData = getPlaceById(id)
     setPlace(placeData)
+    // Load user reviews and questions
+    setUserReviews(getReviewsForPlace(id))
+    setUserQuestions(getQuestionsForPlace(id))
   }, [id])
 
   // Mark as visited only once when component mounts
@@ -57,6 +72,37 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     setIsFavorite(checkIsFavorite(id))
   }, [id, checkIsFavorite, favorites])
+
+  // Check if user is checked in at this place
+  useEffect(() => {
+    setIsCheckedIn(isCheckedInAt(id))
+    
+    const handleCheckinChange = () => {
+      setIsCheckedIn(isCheckedInAt(id))
+    }
+    
+    window.addEventListener("checkinChanged", handleCheckinChange)
+    return () => window.removeEventListener("checkinChanged", handleCheckinChange)
+  }, [id])
+
+  // Listen for review and question changes
+  useEffect(() => {
+    const handleReviewsChange = () => {
+      setUserReviews(getReviewsForPlace(id))
+    }
+    
+    const handleQuestionsChange = () => {
+      setUserQuestions(getQuestionsForPlace(id))
+    }
+    
+    window.addEventListener("reviewsChanged", handleReviewsChange)
+    window.addEventListener("questionsChanged", handleQuestionsChange)
+    
+    return () => {
+      window.removeEventListener("reviewsChanged", handleReviewsChange)
+      window.removeEventListener("questionsChanged", handleQuestionsChange)
+    }
+  }, [id])
 
   // Show loading or not found state
   if (!place) {
@@ -75,14 +121,18 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
   }
 
   const handleCheckIn = () => {
+    if (!place) return
+    checkInToPlace(id, place.name)
     setShowCheckIn(false)
+    setIsCheckedIn(true)
     toast({
       title: "Checked in successfully!",
-      description: "Thanks for helping the community.",
+      description: `You're now checked in at ${place.name}`,
     })
   }
 
   const handleSubmitReview = () => {
+    if (!place) return
     if (rating === 0) {
       toast({
         title: "Please select a rating",
@@ -90,14 +140,46 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
       })
       return
     }
+    
+    saveReview(id, place.name, rating, reviewText, selectedTags)
     setShowReview(false)
     toast({
       title: "Review submitted!",
-      description: "Thanks for your feedback.",
+      description: "Your review has been posted.",
     })
     setRating(0)
     setReviewText("")
     setSelectedTags([])
+  }
+
+  const handleAskQuestion = () => {
+    if (!place) return
+    if (!questionText.trim()) {
+      toast({
+        title: "Please enter a question",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    addQuestion(id, questionText)
+    setShowQuestion(false)
+    toast({
+      title: "Question posted!",
+      description: "The community will help answer it.",
+    })
+    setQuestionText("")
+  }
+
+  const handleShare = () => {
+    const url = `${window.location.origin}/studyhall/place/${id}`
+    navigator.clipboard.writeText(url)
+    setLinkCopied(true)
+    setTimeout(() => setLinkCopied(false), 2000)
+    toast({
+      title: "Link copied!",
+      description: "Share this place with friends.",
+    })
   }
 
   const toggleTag = (tag: string) => {
@@ -134,7 +216,10 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
                 )}
               />
             </button>
-            <button className="p-2 hover:bg-accent rounded-full transition-colors">
+            <button
+              onClick={() => setShowShare(true)}
+              className="p-2 hover:bg-accent rounded-full transition-colors"
+            >
               <Share2 className="h-5 w-5" />
             </button>
           </div>
@@ -177,12 +262,13 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
             {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-3">
               <Button
-                variant="outline"
-                onClick={() => setShowCheckIn(true)}
+                variant={isCheckedIn ? "default" : "outline"}
+                onClick={() => !isCheckedIn && setShowCheckIn(true)}
                 className="w-full"
+                disabled={isCheckedIn}
               >
                 <Navigation className="h-4 w-4 mr-2" />
-                Check In
+                {isCheckedIn ? "Checked In" : "Check In"}
               </Button>
               <Button
                 onClick={() => setShowReview(true)}
@@ -265,6 +351,34 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
           <div className="px-4 space-y-3">
             <h2 className="font-semibold">Recent Reviews</h2>
             <div className="space-y-3">
+              {/* User Reviews */}
+              {userReviews.map((review) => (
+                <Card key={review.id}>
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-medium text-sm">{review.author}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(review.timestamp).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="font-medium">{review.rating}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm">{review.comment}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {review.tags.map((tag: string) => (
+                        <Badge key={tag} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {/* Mock Reviews */}
               {place.reviews.map((review) => (
                 <Card key={review.id}>
                   <CardContent className="p-4 space-y-2">
@@ -280,7 +394,7 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
                     </div>
                     <p className="text-sm">{review.comment}</p>
                     <div className="flex flex-wrap gap-1">
-                      {review.tags.map((tag) => (
+                      {review.tags.map((tag: string) => (
                         <Badge key={tag} variant="secondary" className="text-xs">
                           {tag}
                         </Badge>
@@ -301,6 +415,23 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
               Community Q&A
             </h2>
             <div className="space-y-3">
+              {/* User Questions */}
+              {userQuestions.map((item) => (
+                <Card key={item.id}>
+                  <CardContent className="p-4 space-y-2">
+                    <p className="font-medium text-sm">{item.question}</p>
+                    {item.answer ? (
+                      <p className="text-sm text-muted-foreground">{item.answer}</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Waiting for answer...</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {item.author} • {new Date(item.timestamp).toLocaleDateString()}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+              {/* Mock Questions */}
               {place.qna.map((item) => (
                 <Card key={item.id}>
                   <CardContent className="p-4 space-y-2">
@@ -311,7 +442,11 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
                 </Card>
               ))}
             </div>
-            <Button variant="outline" className="w-full">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setShowQuestion(true)}
+            >
               Ask a Question
             </Button>
           </div>
@@ -421,6 +556,101 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
               >
                 Cancel
               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ask Question Dialog */}
+      <Dialog open={showQuestion} onOpenChange={setShowQuestion}>
+        <DialogContent className="max-w-[340px]">
+          <DialogHeader>
+            <DialogTitle>Ask a Question</DialogTitle>
+            <DialogDescription>
+              Get help from the community about this place
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="question">Your Question</Label>
+              <Textarea
+                id="question"
+                placeholder="e.g., Are there group study rooms available?"
+                value={questionText}
+                onChange={(e) => setQuestionText(e.target.value)}
+                rows={4}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button onClick={handleAskQuestion} className="flex-1">
+                Post Question
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowQuestion(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Dialog */}
+      <Dialog open={showShare} onOpenChange={setShowShare}>
+        <DialogContent className="max-w-[340px]">
+          <DialogHeader>
+            <DialogTitle>Share this place</DialogTitle>
+            <DialogDescription>
+              Share with your friends or study group
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Copy Link */}
+            <div className="space-y-2">
+              <Label>Link</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/studyhall/place/${id}`}
+                  readOnly
+                  className="flex-1"
+                />
+                <Button
+                  size="icon"
+                  variant={linkCopied ? "default" : "outline"}
+                  onClick={handleShare}
+                >
+                  {linkCopied ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Share Options (Mock) */}
+            <div className="space-y-2">
+              <Label>Share via</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" className="w-full" disabled>
+                  📱 iMessage
+                </Button>
+                <Button variant="outline" className="w-full" disabled>
+                  📧 Email
+                </Button>
+                <Button variant="outline" className="w-full" disabled>
+                  💬 WhatsApp
+                </Button>
+                <Button variant="outline" className="w-full" disabled>
+                  📲 More
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground text-center pt-2">
+                Sharing to apps is a mockup feature
+              </p>
             </div>
           </div>
         </DialogContent>

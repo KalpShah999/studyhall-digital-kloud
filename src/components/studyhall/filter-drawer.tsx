@@ -19,6 +19,7 @@ export type FilterState = {
   hasOutlets: boolean
   hasWifi: boolean
   nearFood: boolean
+  hasNaturalLight: boolean
   noiseLevel: number // 0 = quiet, 100 = lively
   maxDistance: number // in km
 }
@@ -55,6 +56,7 @@ export function FilterDrawer({
       hasOutlets: false,
       hasWifi: false,
       nearFood: false,
+      hasNaturalLight: false,
       noiseLevel: 50,
       maxDistance: 2,
     }
@@ -110,6 +112,14 @@ export function FilterDrawer({
                 id="food"
                 checked={localFilters.nearFood}
                 onCheckedChange={(checked) => updateFilter("nearFood", checked)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="naturalLight">Has Natural Light</Label>
+              <Switch
+                id="naturalLight"
+                checked={localFilters.hasNaturalLight}
+                onCheckedChange={(checked) => updateFilter("hasNaturalLight", checked)}
               />
             </div>
           </div>

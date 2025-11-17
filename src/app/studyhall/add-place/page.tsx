@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,9 @@ import {
 } from "@/components/ui/select"
 import { Upload, MapPin, X } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { AutocompleteInput } from "@/components/studyhall/autocomplete-input"
+import { MCMASTER_BUILDINGS, searchBuildings } from "@/lib/mcmaster-buildings"
+import { SUGGESTED_TAGS, searchTags } from "@/lib/suggested-tags"
 
 export default function AddPlacePage() {
   const router = useRouter()
@@ -39,6 +42,15 @@ export default function AddPlacePage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Autocomplete suggestions
+  const addressSuggestions = useMemo(() => {
+    return MCMASTER_BUILDINGS.map((b) => `${b.name} - ${b.address}`)
+  }, [])
+
+  const tagSuggestions = useMemo(() => {
+    return searchTags(tagInput)
+  }, [tagInput])
+
   const handleInputChange = (
     field: keyof typeof formData,
     value: string
@@ -50,12 +62,16 @@ export default function AddPlacePage() {
     setAmenities((prev) => ({ ...prev, [amenity]: !prev[amenity] }))
   }
 
-  const addTag = () => {
-    const trimmed = tagInput.trim()
+  const addTag = (tag?: string) => {
+    const trimmed = (tag || tagInput).trim()
     if (trimmed && !tags.includes(trimmed)) {
       setTags([...tags, trimmed])
       setTagInput("")
     }
+  }
+
+  const handleTagSelect = (suggestion: string) => {
+    addTag(suggestion)
   }
 
   const removeTag = (tagToRemove: string) => {
@@ -210,14 +226,16 @@ export default function AddPlacePage() {
               <div className="space-y-2">
                 <Label htmlFor="address">Address</Label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="address"
-                    placeholder="Building name or address"
-                    className="pl-10"
-                    value={formData.address}
-                    onChange={(e) => handleInputChange("address", e.target.value)}
-                  />
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
+                  <div className="pl-10">
+                    <AutocompleteInput
+                      id="address"
+                      placeholder="Start typing a McMaster building..."
+                      value={formData.address}
+                      onChange={(value) => handleInputChange("address", value)}
+                      suggestions={addressSuggestions}
+                    />
+                  </div>
                 </div>
               </div>
               <Button
@@ -262,20 +280,19 @@ export default function AddPlacePage() {
           <Card>
             <CardContent className="p-4 space-y-3">
               <Label htmlFor="tags">Tags</Label>
+              <p className="text-xs text-muted-foreground">
+                Start typing to see suggested tags
+              </p>
               <div className="flex gap-2">
-                <Input
+                <AutocompleteInput
                   id="tags"
-                  placeholder="Add a tag"
+                  placeholder="Start typing (e.g., Quiet, Natural Light...)"
                   value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault()
-                      addTag()
-                    }
-                  }}
+                  onChange={setTagInput}
+                  suggestions={tagSuggestions}
+                  onSelect={handleTagSelect}
                 />
-                <Button type="button" onClick={addTag} variant="outline">
+                <Button type="button" onClick={() => addTag()} variant="outline">
                   Add
                 </Button>
               </div>

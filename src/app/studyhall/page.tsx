@@ -89,6 +89,7 @@ export default function HomePage() {
     hasOutlets: false,
     hasWifi: false,
     nearFood: false,
+    hasNaturalLight: false,
     noiseLevel: 50,
     maxDistance: 2,
   })
@@ -128,6 +129,9 @@ export default function HomePage() {
       filtered = filtered.filter((p) => 
         p.category === "cafe" || p.amenities.includes("Food")
       )
+    }
+    if (newFilters.hasNaturalLight) {
+      filtered = filtered.filter((p) => p.amenities.includes("Natural Light"))
     }
     if (newFilters.maxDistance < 2) {
       filtered = filtered.filter((p) => p.distance <= newFilters.maxDistance * 1000)
@@ -212,6 +216,7 @@ export default function HomePage() {
                       hasOutlets: false,
                       hasWifi: false,
                       nearFood: false,
+                      hasNaturalLight: false,
                       noiseLevel: 50,
                       maxDistance: 2,
                     }

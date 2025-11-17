@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/select"
 import { ArrowLeft, Bell, Clock } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+
+const NOTIFICATIONS_KEY = "studyhall_notifications"
+const GLOBAL_ENABLED_KEY = "studyhall_notifications_enabled"
 
 type NotificationRule = {
   id: string
@@ -48,8 +51,39 @@ const MOCK_RULES: NotificationRule[] = [
 
 export default function NotificationsPage() {
   const router = useRouter()
-  const [rules, setRules] = useState<NotificationRule[]>(MOCK_RULES)
+  const [rules, setRules] = useState<NotificationRule[]>([])
   const [globalEnabled, setGlobalEnabled] = useState(true)
+
+  // Load from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(NOTIFICATIONS_KEY)
+      const enabledSaved = localStorage.getItem(GLOBAL_ENABLED_KEY)
+      
+      if (saved) {
+        setRules(JSON.parse(saved))
+      } else {
+        setRules(MOCK_RULES)
+      }
+      
+      if (enabledSaved !== null) {
+        setGlobalEnabled(enabledSaved === "true")
+      }
+    } catch {
+      setRules(MOCK_RULES)
+    }
+  }, [])
+
+  // Save to localStorage whenever rules or globalEnabled changes
+  useEffect(() => {
+    if (rules.length > 0 || localStorage.getItem(NOTIFICATIONS_KEY)) {
+      localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(rules))
+    }
+  }, [rules])
+
+  useEffect(() => {
+    localStorage.setItem(GLOBAL_ENABLED_KEY, String(globalEnabled))
+  }, [globalEnabled])
 
   const toggleRule = (id: string) => {
     setRules((prev) =>
@@ -76,10 +110,12 @@ export default function NotificationsPage() {
   }
 
   const handleSave = () => {
+    // Settings are auto-saved, just show confirmation
     toast({
-      title: "Settings saved",
+      title: "Settings saved!",
       description: "Your notification preferences have been updated",
     })
+    router.back()
   }
 
   return (

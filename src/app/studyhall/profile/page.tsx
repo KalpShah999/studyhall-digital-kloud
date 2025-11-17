@@ -18,16 +18,31 @@ import {
   MessageSquare,
 } from "lucide-react"
 import { useFavorites } from "@/hooks/use-favorites"
+import { getUserReviews } from "@/lib/reviews"
+import { useState, useEffect } from "react"
 
 export default function ProfilePage() {
   const router = useRouter()
   const { favorites, visited } = useFavorites()
+  const [reviewCount, setReviewCount] = useState(0)
+
+  // Load review count
+  useEffect(() => {
+    setReviewCount(getUserReviews().length)
+    
+    const handleReviewsChange = () => {
+      setReviewCount(getUserReviews().length)
+    }
+    
+    window.addEventListener("reviewsChanged", handleReviewsChange)
+    return () => window.removeEventListener("reviewsChanged", handleReviewsChange)
+  }, [])
 
   // Dynamic stats based on actual data
   const stats = [
     { label: "Places Visited", value: visited.length.toString(), icon: MapPin },
     { label: "Favorites", value: favorites.length.toString(), icon: Heart },
-    { label: "Reviews", value: "0", icon: MessageSquare },
+    { label: "Reviews", value: reviewCount.toString(), icon: MessageSquare },
   ]
 
   const menuItems = [
@@ -47,13 +62,13 @@ export default function ProfilePage() {
       icon: HelpCircle,
       label: "Help & Support",
       description: "Get assistance",
-      href: "#",
+      href: "/studyhall/help",
     },
     {
       icon: Shield,
       label: "Privacy",
       description: "Data & privacy settings",
-      href: "#",
+      href: "/studyhall/privacy",
     },
   ]
 
