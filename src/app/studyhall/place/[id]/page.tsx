@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -25,64 +25,41 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
+import { getPlaceById, PlaceDetail } from "@/lib/mock-data"
+import { use } from "react"
 
-// Mock data - no auth required
-const MOCK_PLACE = {
-  id: "1",
-  name: "Health Sciences Library - Silent Zone",
-  category: "Library",
-  distance: 250,
-  rating: 4.8,
-  reviewCount: 124,
-  crowdLevel: "moderate" as const,
-  isOpen: true,
-  openingHours: "Mon-Fri: 7:00 AM - 12:00 AM\nSat-Sun: 9:00 AM - 10:00 PM",
-  address: "1280 Main St W, Hamilton, ON L8S 4L8",
-  amenities: {
-    wifi: true,
-    outlets: true,
-    groupTables: false,
-    naturalLight: true,
-  },
-  description:
-    "Dedicated silent study zone on the third floor. Perfect for focused work with minimal distractions.",
-  tags: ["Quiet", "Outlets", "Natural Light", "Study Carrels"],
-  reviews: [
-    {
-      id: "1",
-      author: "Sarah M.",
-      rating: 5,
-      date: "2 days ago",
-      comment: "Perfect for exam prep! Very quiet and lots of outlets.",
-      tags: ["Quiet", "Outlets"],
-    },
-    {
-      id: "2",
-      author: "Alex K.",
-      rating: 4,
-      date: "1 week ago",
-      comment: "Great spot but can get crowded during finals.",
-      tags: ["Quiet", "Crowded"],
-    },
-  ],
-  qna: [
-    {
-      id: "1",
-      question: "Are there group study rooms nearby?",
-      answer: "Yes, on the second floor",
-      timestamp: "3 days ago",
-    },
-  ],
-}
-
-export default function PlaceDetailsPage() {
+export default function PlaceDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const { id } = use(params)
+  const [place, setPlace] = useState<PlaceDetail | null>(null)
   const [isFavorite, setIsFavorite] = useState(false)
   const [showCheckIn, setShowCheckIn] = useState(false)
   const [showReview, setShowReview] = useState(false)
   const [rating, setRating] = useState(0)
   const [reviewText, setReviewText] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+
+  // Load place data based on ID
+  useEffect(() => {
+    const placeData = getPlaceById(id)
+    setPlace(placeData)
+  }, [id])
+
+  // Show loading or not found state
+  if (!place) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+        <MapPin className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Place Not Found</h2>
+        <p className="text-muted-foreground mb-4">
+          The study place you're looking for doesn't exist.
+        </p>
+        <Button onClick={() => router.push("/studyhall")}>
+          Back to Home
+        </Button>
+      </div>
+    )
+  }
 
   const handleCheckIn = () => {
     setShowCheckIn(false)
@@ -159,11 +136,11 @@ export default function PlaceDetailsPage() {
           {/* Main Info */}
           <div className="px-4 space-y-4">
             <div>
-              <h1 className="text-2xl font-bold mb-2">{MOCK_PLACE.name}</h1>
+              <h1 className="text-2xl font-bold mb-2">{place.name}</h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Badge variant="secondary">{MOCK_PLACE.category}</Badge>
+                <Badge variant="secondary">{place.category}</Badge>
                 <span>•</span>
-                <span>{MOCK_PLACE.distance}m away</span>
+                <span>{place.distance}m away</span>
               </div>
             </div>
 
@@ -171,15 +148,15 @@ export default function PlaceDetailsPage() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                <span className="font-semibold text-lg">{MOCK_PLACE.rating}</span>
+                <span className="font-semibold text-lg">{place.rating}</span>
               </div>
               <span className="text-sm text-muted-foreground">
-                {MOCK_PLACE.reviewCount} reviews
+                {place.reviewCount} reviews
               </span>
             </div>
 
             {/* Live Crowd Meter */}
-            <CrowdMeter level={MOCK_PLACE.crowdLevel} />
+            <CrowdMeter level={place.crowdLevel} />
 
             {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-3">
@@ -210,13 +187,13 @@ export default function PlaceDetailsPage() {
               <h2 className="font-semibold">Opening Hours</h2>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant={MOCK_PLACE.isOpen ? "default" : "secondary"}>
+              <Badge variant={place.isOpen ? "default" : "secondary"}>
                 <Clock className="h-3 w-3 mr-1" />
-                {MOCK_PLACE.isOpen ? "Open Now" : "Closed"}
+                {place.isOpen ? "Open Now" : "Closed"}
               </Badge>
             </div>
             <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {MOCK_PLACE.openingHours}
+              {place.openingHours}
             </pre>
           </div>
 
@@ -227,10 +204,10 @@ export default function PlaceDetailsPage() {
             <h2 className="font-semibold">Amenities</h2>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { icon: Wifi, label: "Wi-Fi", available: MOCK_PLACE.amenities.wifi },
-                { icon: Plug, label: "Outlets", available: MOCK_PLACE.amenities.outlets },
-                { icon: Users, label: "Group Tables", available: MOCK_PLACE.amenities.groupTables },
-                { icon: Star, label: "Natural Light", available: MOCK_PLACE.amenities.naturalLight },
+                { icon: Wifi, label: "Wi-Fi", available: place.amenities.wifi },
+                { icon: Plug, label: "Outlets", available: place.amenities.outlets },
+                { icon: Users, label: "Group Tables", available: place.amenities.groupTables },
+                { icon: Star, label: "Natural Light", available: place.amenities.naturalLight },
               ].map((amenity) => {
                 const Icon = amenity.icon
                 return (
@@ -256,9 +233,9 @@ export default function PlaceDetailsPage() {
           {/* Description */}
           <div className="px-4 space-y-2">
             <h2 className="font-semibold">About</h2>
-            <p className="text-sm text-muted-foreground">{MOCK_PLACE.description}</p>
+            <p className="text-sm text-muted-foreground">{place.description}</p>
             <div className="flex flex-wrap gap-2 pt-2">
-              {MOCK_PLACE.tags.map((tag) => (
+              {place.tags.map((tag) => (
                 <Badge key={tag} variant="secondary">
                   {tag}
                 </Badge>
@@ -272,7 +249,7 @@ export default function PlaceDetailsPage() {
           <div className="px-4 space-y-3">
             <h2 className="font-semibold">Recent Reviews</h2>
             <div className="space-y-3">
-              {MOCK_PLACE.reviews.map((review) => (
+              {place.reviews.map((review) => (
                 <Card key={review.id}>
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-start justify-between">
@@ -308,7 +285,7 @@ export default function PlaceDetailsPage() {
               Community Q&A
             </h2>
             <div className="space-y-3">
-              {MOCK_PLACE.qna.map((item) => (
+              {place.qna.map((item) => (
                 <Card key={item.id}>
                   <CardContent className="p-4 space-y-2">
                     <p className="font-medium text-sm">{item.question}</p>
