@@ -19,7 +19,7 @@ const MOCK_PLACES: Place[] = [
     reviewCount: 124,
     crowdLevel: "moderate",
     isOpen: true,
-    amenities: ["Outlets", "Wi-Fi", "Quiet"],
+    amenities: ["Quiet", "Outlets", "Natural Light", "Wi-Fi"],
     isFavorite: false,
   },
   {
@@ -31,7 +31,7 @@ const MOCK_PLACES: Place[] = [
     reviewCount: 89,
     crowdLevel: "busy",
     isOpen: true,
-    amenities: ["Outlets", "Wi-Fi", "Food"],
+    amenities: ["Wi-Fi", "Outlets", "Food", "Coffee", "Group Tables"],
     isFavorite: true,
   },
   {
@@ -43,7 +43,31 @@ const MOCK_PLACES: Place[] = [
     reviewCount: 156,
     crowdLevel: "calm",
     isOpen: true,
-    amenities: ["Outlets", "Wi-Fi", "Group Tables"],
+    amenities: ["Wi-Fi", "Outlets", "Group Tables", "Natural Light"],
+    isFavorite: false,
+  },
+  {
+    id: "4",
+    name: "Engineering Building Atrium",
+    category: "other",
+    distance: 320,
+    rating: 4.2,
+    reviewCount: 67,
+    crowdLevel: "moderate",
+    isOpen: true,
+    amenities: ["Wi-Fi", "Group Tables", "Natural Light"],
+    isFavorite: false,
+  },
+  {
+    id: "5",
+    name: "McMaster Grind",
+    category: "cafe",
+    distance: 540,
+    rating: 4.6,
+    reviewCount: 203,
+    crowdLevel: "calm",
+    isOpen: false,
+    amenities: ["Wi-Fi", "Outlets", "Food", "Coffee", "Quiet"],
     isFavorite: false,
   },
 ]
@@ -55,6 +79,8 @@ const QUICK_SEARCHES = [
   { icon: TrendingUp, label: "Quiet", query: "quiet", isTag: true },
   { icon: TrendingUp, label: "Outlets", query: "outlets", isTag: true },
   { icon: TrendingUp, label: "Natural Light", query: "natural light", isTag: true },
+  { icon: TrendingUp, label: "Group Tables", query: "group tables", isTag: true },
+  { icon: TrendingUp, label: "Wi-Fi", query: "wi-fi", isTag: true },
 ]
 
 const RECENT_SEARCHES = ["Silent study areas", "Library", "Coffee shop"]
