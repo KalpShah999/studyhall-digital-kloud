@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { PlaceCard, Place } from "@/components/studyhall/place-card"
@@ -8,6 +8,7 @@ import { FilterDrawer, FilterState } from "@/components/studyhall/filter-drawer"
 import { List, Map, SlidersHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import { useFavorites } from "@/hooks/use-favorites"
 
 // Mock data - no authentication needed
 const MOCK_PLACES: Place[] = [
@@ -80,9 +81,9 @@ const MOCK_PLACES: Place[] = [
 
 export default function HomePage() {
   const router = useRouter()
+  const { toggleFavorite, isFavorite } = useFavorites()
   const [view, setView] = useState<"list" | "map">("list")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [places, setPlaces] = useState<Place[]>(MOCK_PLACES)
   const [filters, setFilters] = useState<FilterState>({
     openNow: false,
     hasOutlets: false,
@@ -91,6 +92,16 @@ export default function HomePage() {
     noiseLevel: 50,
     maxDistance: 2,
   })
+
+  // Add favorite status to places
+  const placesWithFavorites = useMemo(() => {
+    return MOCK_PLACES.map((p) => ({
+      ...p,
+      isFavorite: isFavorite(p.id),
+    }))
+  }, [isFavorite])
+
+  const [places, setPlaces] = useState<Place[]>(placesWithFavorites)
 
   const activeFilterCount = Object.entries(filters).filter(
     ([key, value]) => {
@@ -102,7 +113,7 @@ export default function HomePage() {
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters)
-    let filtered = [...MOCK_PLACES]
+    let filtered = [...placesWithFavorites]
     
     if (newFilters.openNow) {
       filtered = filtered.filter((p) => p.isOpen)
@@ -126,6 +137,8 @@ export default function HomePage() {
   }
 
   const handleFavoriteToggle = (id: string) => {
+    toggleFavorite(id)
+    // Update local state immediately for UI responsiveness
     setPlaces((prev) =>
       prev.map((p) => (p.id === id ? { ...p, isFavorite: !p.isFavorite } : p))
     )

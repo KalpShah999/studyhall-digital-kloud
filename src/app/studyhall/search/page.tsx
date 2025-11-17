@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { PlaceCard, Place } from "@/components/studyhall/place-card"
 import { Search, MapPin, Clock, TrendingUp, X } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useFavorites } from "@/hooks/use-favorites"
 
 // Mock data - no auth needed
 const MOCK_PLACES: Place[] = [
@@ -58,17 +59,26 @@ const RECENT_SEARCHES = ["Silent study areas", "Library", "Coffee shop"]
 
 export default function SearchPage() {
   const router = useRouter()
+  const { toggleFavorite, isFavorite } = useFavorites()
   const [query, setQuery] = useState("")
   const [recentSearches, setRecentSearches] = useState<string[]>(RECENT_SEARCHES)
   const [results, setResults] = useState<Place[]>([])
   const [isSearching, setIsSearching] = useState(false)
+
+  // Add favorite status to mock places
+  const placesWithFavorites = useMemo(() => {
+    return MOCK_PLACES.map((p) => ({
+      ...p,
+      isFavorite: isFavorite(p.id),
+    }))
+  }, [isFavorite])
 
   const handleSearch = (searchQuery: string) => {
     setQuery(searchQuery)
     if (searchQuery.trim()) {
       setIsSearching(true)
       setTimeout(() => {
-        const filtered = MOCK_PLACES.filter(
+        const filtered = placesWithFavorites.filter(
           (p) =>
             p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -94,6 +104,8 @@ export default function SearchPage() {
   }
 
   const handleFavoriteToggle = (id: string) => {
+    toggleFavorite(id)
+    // Update local state immediately for UI responsiveness
     setResults((prev) =>
       prev.map((p) => (p.id === id ? { ...p, isFavorite: !p.isFavorite } : p))
     )

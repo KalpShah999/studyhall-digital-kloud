@@ -15,16 +15,19 @@ import {
   ChevronRight,
   HelpCircle,
   Shield,
+  MessageSquare,
 } from "lucide-react"
+import { useFavorites } from "@/hooks/use-favorites"
 
 export default function ProfilePage() {
   const router = useRouter()
+  const { favorites, visited } = useFavorites()
 
-  // Mock stats - no auth needed
+  // Dynamic stats based on actual data
   const stats = [
-    { label: "Places Visited", value: "12", icon: MapPin },
-    { label: "Favorites", value: "5", icon: Heart },
-    { label: "Reviews", value: "8", icon: Clock },
+    { label: "Places Visited", value: visited.length.toString(), icon: MapPin },
+    { label: "Favorites", value: favorites.length.toString(), icon: Heart },
+    { label: "Reviews", value: "0", icon: MessageSquare },
   ]
 
   const menuItems = [

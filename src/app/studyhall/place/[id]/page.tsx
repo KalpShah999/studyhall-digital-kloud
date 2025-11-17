@@ -27,10 +27,12 @@ import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
 import { getPlaceById, PlaceDetail } from "@/lib/mock-data"
 import { use } from "react"
+import { useFavorites } from "@/hooks/use-favorites"
 
 export default function PlaceDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { id } = use(params)
+  const { toggleFavorite, isFavorite: checkIsFavorite, addVisited, favorites } = useFavorites()
   const [place, setPlace] = useState<PlaceDetail | null>(null)
   const [isFavorite, setIsFavorite] = useState(false)
   const [showCheckIn, setShowCheckIn] = useState(false)
@@ -44,6 +46,17 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
     const placeData = getPlaceById(id)
     setPlace(placeData)
   }, [id])
+
+  // Mark as visited only once when component mounts
+  useEffect(() => {
+    addVisited(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  // Update favorite status when favorites change
+  useEffect(() => {
+    setIsFavorite(checkIsFavorite(id))
+  }, [id, checkIsFavorite, favorites])
 
   // Show loading or not found state
   if (!place) {
@@ -108,7 +121,10 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
           </button>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsFavorite(!isFavorite)}
+              onClick={() => {
+                toggleFavorite(id)
+                setIsFavorite(!isFavorite)
+              }}
               className="p-2 hover:bg-accent rounded-full transition-colors"
             >
               <Heart
