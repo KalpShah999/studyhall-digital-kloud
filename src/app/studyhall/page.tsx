@@ -10,74 +10,22 @@ import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useFavorites } from "@/hooks/use-favorites"
 
-// Mock data - no authentication needed
-const MOCK_PLACES: Place[] = [
-  {
-    id: "1",
-    name: "Health Sciences Library - Silent Zone",
-    category: "library",
-    distance: 250,
-    rating: 4.8,
-    reviewCount: 124,
-    crowdLevel: "moderate",
-    isOpen: true,
-    amenities: ["Quiet", "Outlets", "Natural Light", "Wi-Fi"],
-    image: undefined,
-    isFavorite: false,
-  },
-  {
-    id: "2",
-    name: "Togo Café Back Room",
-    category: "cafe",
-    distance: 420,
-    rating: 4.5,
-    reviewCount: 89,
-    crowdLevel: "busy",
-    isOpen: true,
-    amenities: ["Wi-Fi", "Outlets", "Food", "Coffee", "Group Tables"],
-    image: undefined,
-    isFavorite: true,
-  },
-  {
-    id: "3",
-    name: "Mills Library Study Lounge",
-    category: "library",
-    distance: 180,
-    rating: 4.7,
-    reviewCount: 156,
-    crowdLevel: "calm",
-    isOpen: true,
-    amenities: ["Wi-Fi", "Outlets", "Group Tables", "Natural Light"],
-    image: undefined,
-    isFavorite: false,
-  },
-  {
-    id: "4",
-    name: "Engineering Building Atrium",
-    category: "other",
-    distance: 320,
-    rating: 4.2,
-    reviewCount: 67,
-    crowdLevel: "moderate",
-    isOpen: true,
-    amenities: ["Wi-Fi", "Group Tables", "Natural Light"],
-    image: undefined,
-    isFavorite: false,
-  },
-  {
-    id: "5",
-    name: "McMaster Grind",
-    category: "cafe",
-    distance: 540,
-    rating: 4.6,
-    reviewCount: 203,
-    crowdLevel: "calm",
-    isOpen: false,
-    amenities: ["Wi-Fi", "Outlets", "Food", "Coffee", "Quiet"],
-    image: undefined,
-    isFavorite: false,
-  },
-]
+// Get all places from centralized database
+import { getAllPlaces } from "@/lib/mock-data"
+
+const MOCK_PLACES: Place[] = getAllPlaces().map((p) => ({
+  id: p.id,
+  name: p.name,
+  category: p.category.toLowerCase() as "library" | "cafe" | "outdoor" | "other",
+  distance: p.distance,
+  rating: p.rating,
+  reviewCount: p.reviewCount,
+  crowdLevel: p.crowdLevel,
+  isOpen: p.isOpen,
+  amenities: p.tags,
+  image: p.image,
+  isFavorite: false,
+}))
 
 export default function HomePage() {
   const router = useRouter()

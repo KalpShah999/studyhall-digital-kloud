@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { CrowdMeter } from "@/components/studyhall/crowd-meter"
+import Image from "next/image"
 import {
   ArrowLeft,
   Star,
@@ -19,6 +20,7 @@ import {
   Heart,
   Share2,
   Navigation,
+  Sun,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -230,8 +232,18 @@ export default function PlaceDetailsPage({ params }: { params: Promise<{ id: str
       <div className="flex-1 overflow-auto">
         <div className="space-y-6 pb-20">
           {/* Hero Image */}
-          <div className="w-full h-48 bg-muted flex items-center justify-center">
-            <MapPin className="h-12 w-12 text-muted-foreground" />
+          <div className="w-full h-64 bg-muted flex items-center justify-center relative overflow-hidden">
+            {place.image ? (
+              <Image
+                src={place.image}
+                alt={place.name}
+                fill
+                className="object-cover"
+                priority
+              />
+            ) : (
+              <MapPin className="h-12 w-12 text-muted-foreground" />
+            )}
           </div>
 
           {/* Main Info */}
